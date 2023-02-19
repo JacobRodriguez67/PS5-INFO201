@@ -129,8 +129,28 @@ min_year
 Next, let's analyze CO2 emissions.
 
 1.  (2pt) How many missing co2 emissions are there for each year? Analyze both missing *CO2* and *co2_PC*. Which years have most missing data?\
+```{r}
+##finds the missing co2 and cos_PC values for each year
+missing_co2 <- table(is.na(gapmind$co2), gapmind$time)
+missing_co2
+missing_co2_PC <- table(is.na(gapmind$co2_PC), gapmind$time)
+missing_co2_PC
+##fnds the years with the most missing data
+co2_missing_rows <- which(is.na(gapmind$co2))
+co2_missing_years <- table(gapmind$time[co2_missing_rows])
+co2_missing_years <- sort(co2_missing_years, decreasing = TRUE)
+head(co2_missing_years)
+```
 
 2.  (5pt) Make a plot of total CO2 emissions over time for the U.S, China, and India. Add a few more countries of your choice. Explain what do you see.\
+```{r}
+countries <- c("United States of America", "China", "India")
+sub_data <- gapmind[gapmind$name %in% countries, ]
+ggplot(sub_data, aes(x = time, y = co2, color = name)) +
+  geom_line() +
+  labs(x = "Year", y = "CO2 Emissions", color = "Country") +
+  ggtitle("CO2 Emissions Over Time for Selected Countries")
+```
 
 3.  (5pt) Now let's analyze the CO2 emissions per capita (*co2_PC*). Make a similar plot of thesame countries. What does this figure suggest?\
 
