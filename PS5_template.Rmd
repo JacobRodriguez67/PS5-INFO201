@@ -144,24 +144,71 @@ head(co2_missing_years)
 
 2.  (5pt) Make a plot of total CO2 emissions over time for the U.S, China, and India. Add a few more countries of your choice. Explain what do you see.\
 ```{r}
-countries <- c("United States of America", "China", "India")
+countries <- c("United States of America", "China", "India", "Mexico", "Spain")
 sub_data <- gapmind[gapmind$name %in% countries, ]
 ggplot(sub_data, aes(x = time, y = co2, color = name)) +
   geom_line() +
   labs(x = "Year", y = "CO2 Emissions", color = "Country") +
-  ggtitle("CO2 Emissions Over Time for Selected Countries")
+  ggtitle("CO2 Emissions Over Time")
 ```
+What we see with the graph is China's Co2 emissions have grown exponentially 
+more quickly than other countries like Mexico and Spain, with the US being a close contender.
 
-3.  (5pt) Now let's analyze the CO2 emissions per capita (*co2_PC*). Make a similar plot of thesame countries. What does this figure suggest?\
+3.  (5pt) Now let's analyze the CO2 emissions per capita (*co2_PC*). Make a similar plot of the same countries. What does this figure suggest?\
+```{r}
+countries <- c("United States of America", "China", "India", "Mexico", "Spain")
+subgap <- gapmind[gapmind$name %in% countries, ]
+ggplot(subgap, aes(x = time, y = co2_PC, color = name)) +
+  geom_line() +
+  labs(x = "Year", y = "CO2 Emissions per Capita", color = "Country") +
+  ggtitle("CO2 Emissions per Capita Over Time")
+```
+The figure suggests that per capita emissions in the US is much higher than in China as the previous graph suggests.
 
 4.  (6pt) Compute average CO2 emissions per capita across the continents (assume *region* is the same as continent). Comment what do you see.\
     Note: just compute averages over countries and ignore the fact that countries are of different size.\
-    Hint: Americas 2016 should be 4.80.\
+    Hint: Americas 2016 should be 4.80.
+```{r}
+gapmind %>% 
+  filter(time == 2016) %>% 
+  group_by(region) %>% 
+  summarize(avg_co2 = mean(co2_PC, na.rm = TRUE))
+```
 
-5.  (7pt) Make a barplot where you show the previous results--average CO2 emissions per capita across continents in 1960 and 2016.\
+5.  (7pt) Make a barplot where you show the previous results--average CO2 emissions per capita across continents in 1960 and 2016.
     Hint: it should look something along these lines(**Please refer to the spec for the graph**)\
+```{r}
+co2_per_year <- gapmind %>% 
+  filter(time == 1960 | time == 2016, !is.na(co2_PC), !is.na(region)) %>% 
+  group_by(time, region) %>% 
+  summarize(avg_co2 = mean(co2_PC, na.rm = TRUE))
+ggplot(co2_per_year, aes(x = region, y = avg_co2, fill = as.factor(time))) + 
+  geom_col(position = "dodge") +
+  labs(title = "Average CO2 Emissions Per Capita Across Continents", x = "Continent", y = "CO2 Emissions Per Capita") +
+  scale_fill_discrete(name = "Year")
+
+```
 
 6.  Which countries are the three largest, and three smallest CO2 emitters (in terms of CO2 per capita) in 2019 for each continent? (Assume *region* is continent).\
+```{r}
+gapmind_2016 <- gapmind %>% 
+  filter(time == 2016)
+top_3 <- gapmind_2016 %>% 
+  group_by(region) %>% 
+  top_n(3, co2_PC) %>% 
+  arrange(region, desc(co2_PC))
+bottom_3 <- gapmind_2016 %>% 
+  group_by(region) %>% 
+  top_n(-3, co2_PC) %>% 
+  arrange(region, co2_PC)
+
+cat("Top 3 CO2 emitters per capita in 2019 by continent:\n")
+print(top_3)
+
+cat("\nBottom 3 CO2 emitters per capita in 2019 by continent:\n")
+print(bottom_3)
+      
+```
 
 ------------------------------------------------------------------------
 
