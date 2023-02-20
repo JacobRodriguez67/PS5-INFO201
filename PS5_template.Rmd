@@ -98,10 +98,10 @@ gapmind %>%
     (a) (5pt) Find how many names are there for each iso-2 code. Are there any iso-2 codes that correspond to more than one name? What are these countries?
 ```{r}
 
-how_many <- gapmind %>%
+names <- gapmind %>%
   filter(iso2 %in% gapmind$iso2) %>%
   distinct(iso2, name)
-how_many
+names
 
 ```
 
@@ -189,7 +189,7 @@ ggplot(co2_per_year, aes(x = region, y = avg_co2, fill = as.factor(time))) +
 
 ```
 
-6.  Which countries are the three largest, and three smallest CO2 emitters (in terms of CO2 per capita) in 2019 for each continent? (Assume *region* is continent).\
+6.  Which countries are the three largest, and three smallest CO2 emitters (in terms of CO2 per capita) in 2019 for each continent? (Assume *region* is continent).\ 
 ```{r}
 gapmind_2016 <- gapmind %>% 
   filter(time == 2016)
@@ -202,42 +202,128 @@ bottom_3 <- gapmind_2016 %>%
   top_n(-3, co2_PC) %>% 
   arrange(region, co2_PC)
 
-cat("Top 3 CO2 emitters per capita in 2019 by continent:\n")
 print(top_3)
-
-cat("\nBottom 3 CO2 emitters per capita in 2019 by continent:\n")
 print(bottom_3)
       
 ```
-
+The data from 2017-2019 does not work for this section so I changed it to 2016
 ------------------------------------------------------------------------
 
 # 4 GDP per capita (50pt)
 
 Let's look at GDP per capita (*GDP_PC*)
 
-1.  (8pt) Make a scatterplot of GDP per capita versus life expectancy by country, using data for 1960. Make the point size dependent on the country size, and color those according to the continent. Feel free to adjust the plot in other ways to make it better.\
-    Comment what do you see there.\
+1.  (8pt) Make a scatterplot of GDP per capita versus life expectancy by country, using data for 1960. Make the point size dependent on the country size, and color those according to the continent. Feel free to adjust the plot in other ways to make it better
+    Comment what do you see there
+```{r}
+gapmind_1960 <- gapmind %>% filter(time == 1960,!is.na(co2_PC), !is.na(region))
+
+
+ggplot(gapmind_1960, aes(x = GDP_PC, y = lifeExpectancy, size = totalPopulation, color = region)) +
+  geom_point() +
+  scale_x_log10() +
+  labs(x = "GDP per capita", y = "Life expectancy", size = "Country size", color = "Continent")
+
+```
+What we see here is that the life expectancy goes up the with higher GDP and the populations are different according to this and this is seen with sorther life expectancies for countries in Asia and Africa during the 1960s.
 
 2.  (4pt) Make a similar plot, but this time use 2019 data only.\
+```{r}
+gapmind_2019 <- gapmind %>% filter(time == 2019)
+
+
+ggplot(gapmind_2019, aes(x = GDP_PC, y = lifeExpectancy, size = totalPopulation, color = region)) +
+  geom_point() +
+  scale_x_log10() +
+  labs(x = "GDP per capita", y = "Life expectancy", size = "Country size", color = "Continent")
+
+```
 
 3.  (6pt) Compare these two plots and comment what do you see. How has world developed through the last 60 years?\
 
+What we can see with these two plots is that over the population of countries in Asia has grown and life expectancy has gone up while for countries in Africa has remained similar despite 60 years. For the Americqs population and life expectancy has improved much more quickly and Oceania has seen an improvement in life expectancy but not as much growth. 
+
 4.  (6pt) Compute the average life expectancy for each continent in 1960 and 2019. Do the results fit with what do you see on the figures?\
     Note: here as *average*I mean just average over countries, ignore the fact that countries are of different size.\
+```{r}
+gapmind_1960 %>%
+  group_by(region) %>%
+  summarize(Life_exp_1960 = mean(lifeExpectancy, na.rm = TRUE))
+
+gapmind_2019 %>%
+  group_by(region) %>%
+  summarize(Life_exp_2019 = mean(lifeExpectancy, na.rm = TRUE))
+```
 
 5.  (8pt) Compute the average LE growth from 1960-2019 across the continents. Show the results in the order of growth. Explain what do you see.\
     Hint: these data (data in long form) is not the simplest to compute growth. But you may want to check out the lag() function. And do not forget to group data by continent when using lag(), otherwise your results will be messed up! See [**https://faculty.washington.edu/otoomet/info201-book/dplyr.html#dplyr-helpers-compute**](https://faculty.washington.edu/otoomet/info201-book/dplyr.html#dplyr-helpers-compute).\
+```{r}
+
+avg_growth <- gapmind_1960 %>% 
+  left_join(gapmind_2019, by = c("name", "region")) %>% 
+  mutate(le_growth = lifeExpectancy.y - lifeExpectancy.x) %>% 
+  group_by(region) %>% 
+  summarize(avg_le_growth = mean(le_growth, na.rm = TRUE)) %>% 
+  arrange(avg_le_growth, increasing = TRUE)
+
+# Show the results in the order of growth
+avg_growth
+
+
+```
+What we see here is that the different regions life expectancy went up and in regions such as Asia and Africa it going up by 23 years while in Europe only by 11 years.
 
 6.  (6pt) Show the histogram of GDP per capita for years of 1960 and 2019. Try to put both histograms on the same graph, see how well you can do it!\
+```{r}
+ggplot() +
+  geom_histogram(data = gapmind_1960, aes(x = GDP_PC, fill = "1960"), alpha = 0.5) +
+  geom_histogram(data = gapmind_2019, aes(x = GDP_PC, fill = "2019"), alpha = 0.5) +
+  # Set axis labels and legend title
+  labs(x = "GDP per capita", fill = "Year")
+
+```
+
 
 7.  (6pt) What was the ranking of US in terms of life expectancy in 1960 and in 2019? (When counting from top.)\
     Hint: check out the function rank()!\
     Hint2: 17 for 1960.\
+```{r}
+
+us_rank <- gapmind %>% 
+  filter(time == 1960 | time == 2019) %>% 
+  group_by(time) %>% 
+  mutate(lifeExp_rank = rank(lifeExpectancy))
+
+
+us_rank_1960 <- us_rank %>% 
+  filter(time == 1960 & name == "United States of America") %>% 
+  pull(lifeExp_rank)
+
+us_rank_2019 <- us_rank %>% 
+  filter(time == 2019 & name == "United States of America") %>% 
+  pull(lifeExp_rank)
+
+us_rank_1960
+us_rank_2019
+
+```
+I am not sure what I did incorrect but the rank is showing up as this rather than 17 but if this is the case than we would see that the rank fell 135 places
 
 8.  (6pt) If you did this correctly, then you noticed that US ranking has been falling quite a bit. But we also have more countries in 2019--what about the relative rank divided by the corresponding number of countries that have LE data in the corresponding year?\
     Hint: 0.0904 for 1960.\
+```{r}
+gapmind %>%
+  filter(time == 1960 | time == 2019) %>%
+  group_by(time) %>%
+  mutate(lifeExp_rank = dense_rank(desc(lifeExpectancy))) %>%
+  group_by(time) %>%
+  mutate(rel_lifeExp_rank = lifeExp_rank / n_distinct(name[!is.na(lifeExpectancy)])) %>%
+  filter(name == "United States of America") %>%
+  select(time, lifeExpectancy, lifeExp_rank, rel_lifeExp_rank)
 
+```
+    
 ------------------------------------------------------------------------
 
 Finally tell us how many hours did you spend on this PS.
+I spent about 10-11 hours on this.
